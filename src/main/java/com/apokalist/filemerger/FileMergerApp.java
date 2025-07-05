@@ -18,7 +18,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.util.List;
-
+import java.util.Objects;
 
 
 public class FileMergerApp extends Application {
@@ -67,6 +67,8 @@ public class FileMergerApp extends Application {
         Scene scene = new Scene(root, 600, 500);
         primaryStage.setScene(scene);
         primaryStage.show();
+
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/style.css")).toExternalForm());
 
         statusTA.setText("Welcome to Era FileMerger!\n" +
                 "Select files to merge and click 'Merge files' to combine them.\n" +
