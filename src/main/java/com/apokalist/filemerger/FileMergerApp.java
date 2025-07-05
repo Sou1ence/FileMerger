@@ -13,9 +13,12 @@ import javafx.stage.Stage;
 
 import javafx.stage.FileChooser;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.nio.file.Files;
 import java.util.List;
+
 
 
 public class FileMergerApp extends Application {
@@ -45,9 +48,9 @@ public class FileMergerApp extends Application {
         clearBtn.setOnAction(e -> clearFileList());
         clearBtn.getStyleClass().add("clear-button");
 
-        Button mergeBtn = new Button ("Merge files");
+        Button mergeBtn = new Button("Merge files");
         mergeBtn.setPrefWidth(140);
-        mergeBtn.setOnAction(e -> mergeFiles());
+        mergeBtn.setOnAction(e -> mergeFiles(primaryStage));
         mergeBtn.getStyleClass().add("merge-button");
 
         statusTA = new TextArea();
@@ -58,7 +61,7 @@ public class FileMergerApp extends Application {
 
         // Set up the layout
         VBox root = new VBox(10);
-        root.setPadding(new Insets (15));
+        root.setPadding(new Insets(15));
         root.getChildren().addAll(titleL, fLV, selectFilesBtn, clearBtn, mergeBtn, new Label("Status"), statusTA);
 
         Scene scene = new Scene(root, 600, 500);
@@ -70,7 +73,7 @@ public class FileMergerApp extends Application {
                 "You can clear the list at any time");
     }
 
-    private void selectFiles (Stage stage) {
+    private void selectFiles(Stage stage) {
         FileChooser fC = new FileChooser();
         fC.setTitle("Select Files to Merge");
         fC.getExtensionFilters().addAll(
@@ -97,5 +100,64 @@ public class FileMergerApp extends Application {
         fLV.getItems().clear();
         selectedFiles = null;
         statusTA.setText("File list cleared.");
+    }
+
+
+    private void mergeFiles(Stage stage) {
+        if (selectedFiles == null || selectedFiles.isEmpty()) {
+            statusTA.setText("No files selected to merge");
+            return;
+        }
+
+        FileChooser fC = new FileChooser();
+        fC.setTitle("Save Merged File");
+        fC.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
+        fC.setInitialFileName("merged_file.txt");
+
+        File outputF = fC.showSaveDialog(stage);
+
+        if (outputF != null) {
+            try {
+                mergeFilesToOutput(outputF);
+                statusTA.setText("Files merged successfully, \nResult file path:  " + outputF.getAbsolutePath());
+            } catch (Exception e) {
+                statusTA.setText("Error merging files: " + e.getMessage());
+//                logError(e);
+                showAlert("Issue!", "An error occurred while merging files:\n" + e.getMessage());
+            }
+        }
+    }
+
+    private void mergeFilesToOutput(File outputFile) throws Exception {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputFile))) {
+            for (int i = 0; i < selectedFiles.size(); i++) {
+                File file = selectedFiles.get(i);
+
+                // File details
+                bw.write("=== " + file.getName() + " ===\n");
+                bw.write("Path: " + file.getAbsolutePath() + "\n");
+                bw.write("Size: " + file.length() + " byte\n");
+                bw.write("--------------------------------\n");
+
+                try {
+                    List<String> lines = Files.readAllLines(file.toPath());
+
+                    for (String l : lines)
+                        bw.write(l + "\n");
+
+                } catch (Exception e) {
+                    throw new Exception("Failed to merge files: " + e.getMessage());
+                }
+                bw.write("\n\n");
+            }
+        }
+    }
+
+    private void showAlert (String title, String msg) {
+        Alert alert = new Alert (Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(msg);
+        alert.showAndWait();
     }
 }
